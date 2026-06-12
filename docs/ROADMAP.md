@@ -310,7 +310,18 @@
     activation/désactivation de la 2FA, codes de récupération, sessions,
     activité récente), étape de saisie du code 2FA dans `LoginPage`, lien
     dans la `Navbar`.
-- ⬜ Sauvegardes chiffrées automatisées de la base PostgreSQL.
+- ✅ Sauvegardes chiffrées automatisées de la base PostgreSQL :
+  - Nouveau service `backup` (`backup/Dockerfile`, basé sur
+    `postgres:16-alpine` pour des `pg_dump`/`psql` compatibles avec le
+    serveur) : `pg_dump | gzip | openssl enc -aes-256-cbc -pbkdf2` vers
+    `backups/devacademy_<horodatage>.sql.gz.enc`, boucle toutes les
+    `BACKUP_INTERVAL_HOURS` heures (24 par défaut), purge des fichiers de
+    plus de `BACKUP_RETENTION_DAYS` jours (7 par défaut).
+  - `backup/restore.sh` : déchiffre et restaure une sauvegarde via
+    `docker compose exec backup restore.sh <fichier>`.
+  - `.env.example` : nouvelle variable `BACKUP_ENCRYPTION_KEY` (à conserver
+    séparément des sauvegardes), `BACKUP_INTERVAL_HOURS`,
+    `BACKUP_RETENTION_DAYS`. `backups/` ajouté au `.gitignore`.
 
 ## Critères de sortie du MVP (Phase 1)
 - Inscription/connexion/déconnexion/rafraîchissement de session fonctionnels

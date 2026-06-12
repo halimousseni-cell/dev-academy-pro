@@ -101,6 +101,14 @@ jobs:
           tags: dev-academy-pro-nginx:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Build backup image
+        uses: docker/build-push-action@v6
+        with:
+          context: backup
+          push: false
+          tags: dev-academy-pro-backup:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   trivy-scan:
     name: Vulnerability scan — Trivy
@@ -133,6 +141,14 @@ jobs:
           load: true
           tags: dev-academy-pro-nginx:ci
           cache-from: type=gha
+      - name: Build backup image
+        uses: docker/build-push-action@v6
+        with:
+          context: backup
+          push: false
+          load: true
+          tags: dev-academy-pro-backup:ci
+          cache-from: type=gha
       - name: Scan backend image
         uses: aquasecurity/trivy-action@master
         with:
@@ -151,6 +167,13 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: dev-academy-pro-nginx:ci
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+          ignore-unfixed: true
+      - name: Scan backup image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: dev-academy-pro-backup:ci
           severity: CRITICAL,HIGH
           exit-code: "1"
           ignore-unfixed: true

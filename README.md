@@ -58,6 +58,23 @@ Le certificat est renouvelé automatiquement par le service `certbot` ; le
 reverse proxy `nginx` recharge sa configuration toutes les 6 heures pour en
 tenir compte.
 
+## Sauvegardes PostgreSQL chiffrées
+
+Le service `backup` effectue un `pg_dump` de la base, le compresse puis le
+chiffre (AES-256-CBC, clé `BACKUP_ENCRYPTION_KEY` définie dans `.env`) toutes
+les `BACKUP_INTERVAL_HOURS` heures (24 par défaut), et conserve les fichiers
+`backups/devacademy_<horodatage>.sql.gz.enc` pendant `BACKUP_RETENTION_DAYS`
+jours (7 par défaut). Pensez à copier régulièrement le dossier `backups/` (et
+à conserver `BACKUP_ENCRYPTION_KEY` séparément) vers un stockage hors site.
+
+```bash
+# Déclencher une sauvegarde immédiate
+docker compose exec backup backup.sh
+
+# Restaurer une sauvegarde (écrase la base existante)
+docker compose exec backup restore.sh /backups/devacademy_20260101T000000Z.sql.gz.enc
+```
+
 ## Démarrage rapide (développement local sans Docker)
 
 Nécessite une instance PostgreSQL locale (ex. `docker compose up -d db`,

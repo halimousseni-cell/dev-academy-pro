@@ -3,3 +3,6 @@
 # Certificats Let's Encrypt générés par init-letsencrypt.sh / certbot
 certbot/conf/
 certbot/www/
+
+# Sauvegardes PostgreSQL chiffrées générées par le service "backup"
+backups/

@@ -47,7 +47,7 @@ bloquant pour le MVP) · — non applicable au MVP.
 - ✅ HTTPS obligatoire (TLS) — reverse proxy Nginx + Let's Encrypt
   (`docker-compose.prod.yml`, `init-letsencrypt.sh`), HSTS, `COOKIE_SECURE=true`
 - ✅ Hash des mots de passe et tokens (jamais en clair)
-- 🕒 Chiffrement des sauvegardes (roadmap)
+- ✅ Chiffrement des sauvegardes (AES-256-CBC/PBKDF2, service `backup`)
 - 🕒 Rotation automatique des clés (roadmap)
 
 ## Gestion des secrets
@@ -73,7 +73,7 @@ bloquant pour le MVP) · — non applicable au MVP.
 ## Base de données
 - ✅ Requêtes préparées (Prisma)
 - ✅ Contrôle d'accès granulaire via couche service
-- 🕒 Sauvegardes automatiques chiffrées (roadmap)
+- ✅ Sauvegardes automatiques chiffrées (service `backup`, voir README)
 - 🕒 Chiffrement at-rest (PostgreSQL + pgcrypto, roadmap production)
 
 ## Déploiement
