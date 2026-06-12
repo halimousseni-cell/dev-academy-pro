@@ -271,7 +271,7 @@ export async function disableMfa(userId: string, password: string, code: string,
     throw new AppError(401, "Mot de passe ou code invalide");
   }
 
-  let codeValid = false;
+  let codeValid: boolean;
   if (/^\d{6}$/.test(code)) {
     codeValid = verifyTotp(user.mfaSecret, code);
   } else {

@@ -28,8 +28,9 @@ export function CertificateVerifyPage() {
   }
 
   useEffect(() => {
+    // Vérification automatique lorsque le numéro de série est fourni dans l'URL.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (serialNumber) void verify(serialNumber);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serialNumber]);
 
   function handleSubmit(e: React.FormEvent) {

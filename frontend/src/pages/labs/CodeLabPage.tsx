@@ -56,10 +56,10 @@ ${safeHtml}
     send("error", [e.message + " (ligne " + e.lineno + ")"]);
   });
 })();
-<\/script>
+</script>
 <script>
 ${safeJs}
-<\/script>
+</script>
 </body>
 </html>`;
 }

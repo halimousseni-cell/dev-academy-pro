@@ -3,7 +3,7 @@ import { isAxiosError } from "axios";
 import { QRCodeSVG } from "qrcode.react";
 import { AlertTriangle, ShieldCheck, ShieldOff, Smartphone } from "lucide-react";
 import { api } from "../../api/client";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../hooks/useAuth";
 import type { SecurityOverview } from "../../types";
 
 const ACTION_LABELS: Record<string, string> = {

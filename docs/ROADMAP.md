@@ -262,9 +262,11 @@
   (`backend/src/config/env.ts`) pour découpler le flag `Secure` du cookie de
   refresh token de `NODE_ENV` (utile tant que le reverse proxy HTTPS n'est
   pas en place).
-- ⬜ CI/CD GitHub Actions : lint, tests, SAST (Semgrep), scan de
-  vulnérabilités (Trivy), build images, DAST (OWASP ZAP) sur environnement
-  de staging.
+- ✅ CI/CD GitHub Actions (`.github/workflows/ci.yml`) : lint + typecheck
+  backend, lint + build frontend, SAST (Semgrep), audit de dépendances npm,
+  build des images Docker backend/frontend et scan de vulnérabilités Trivy
+  sur ces images (sévérités CRITICAL/HIGH). DAST (OWASP ZAP) sur
+  environnement de staging reste hors périmètre (pas d'infra de staging).
 - ⬜ Nginx reverse proxy dédié + HTTPS (Let's Encrypt), HSTS, `COOKIE_SECURE=true`.
 - ✅ MFA (TOTP, RFC 6238) + dashboard de sécurité + détection d'anomalies :
   - `backend/src/utils/totp.ts` (base32, génération de secret, URI

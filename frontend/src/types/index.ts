@@ -9,6 +9,8 @@ export interface User {
   mfaEnabled?: boolean;
 }
 
+export type LoginResult = { mfaRequired: true; mfaToken: string } | { mfaRequired: false };
+
 export interface SecuritySession {
   id: string;
   userAgent: string | null;

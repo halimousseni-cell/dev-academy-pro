@@ -6,7 +6,7 @@ import type { Lesson } from "../../types";
 
 export function LessonViewer({ lesson, onCompleted }: { lesson: Lesson; onCompleted: () => void }) {
   const [isCompleting, setIsCompleting] = useState(false);
-  const startRef = useRef<number>(Date.now());
+  const startRef = useRef<number>(0);
 
   useEffect(() => {
     startRef.current = Date.now();

@@ -75,7 +75,7 @@ function buildCommentPage(commentHtml: string): string {
   <h3>Commentaires de l'article</h3>
   <div class="comment"><b>Alice :</b> Très clair, merci pour cet article !</div>
   <div class="comment"><b>Vous :</b> ${commentHtml}</div>
-  <script>${CONSOLE_BRIDGE}<\/script>
+  <script>${CONSOLE_BRIDGE}</script>
 </body>
 </html>`;
 }
@@ -104,6 +104,8 @@ function PreviewPanel({ title, description, srcDoc, icon: Icon, iconClass }: Pre
   }, []);
 
   useEffect(() => {
+    // Réinitialise le journal lorsque le contenu de l'iframe est rechargé.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLogs([]);
   }, [srcDoc]);
 

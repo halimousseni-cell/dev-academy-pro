@@ -62,6 +62,8 @@ export function ExamPlayer({ exam, onPassed }: { exam: Exam; onPassed: () => voi
   useEffect(() => {
     if (timeLeft === null || result) return;
     if (timeLeft <= 0) {
+      // Soumission automatique à l'expiration du temps imparti.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       void handleSubmit();
       return;
     }
