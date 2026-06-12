@@ -48,13 +48,25 @@ model User {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  refreshTokens RefreshToken[]
-  auditLogs     AuditLog[]
-  progress      UserProgress[]
-  quizAttempts  QuizAttempt[]
-  badges        UserBadge[]
-  examAttempts  ExamAttempt[]
-  certificates  Certificate[]
+  refreshTokens    RefreshToken[]
+  auditLogs        AuditLog[]
+  progress         UserProgress[]
+  quizAttempts     QuizAttempt[]
+  badges           UserBadge[]
+  examAttempts     ExamAttempt[]
+  certificates     Certificate[]
+  mfaRecoveryCodes MfaRecoveryCode[]
+}
+
+model MfaRecoveryCode {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash  String    @unique
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }
 
 model RefreshToken {

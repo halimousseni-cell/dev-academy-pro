@@ -6,11 +6,15 @@ import {
   isPasswordStrong,
   verifyPassword,
 } from "../../utils/password";
+import { generateRecoveryCodes, hashRecoveryCode } from "../../utils/recoveryCodes";
+import { generateTotpSecret, getTotpUri, verifyTotp } from "../../utils/totp";
 import {
   generateRefreshToken,
   getRefreshTokenExpiry,
   hashRefreshToken,
   signAccessToken,
+  signMfaChallengeToken,
+  verifyMfaChallengeToken,
 } from "../../utils/tokens";
 import type { LoginInput, RegisterInput } from "./auth.schema";
 
@@ -48,6 +52,29 @@ interface AuthResult {
   refreshToken: string;
 }
 
+interface MfaChallengeResult {
+  mfaRequired: true;
+  mfaToken: string;
+}
+
+export type LoginResult = AuthResult | MfaChallengeResult;
+
+/**
+ * Compare la connexion en cours au dernier login réussi de l'utilisateur :
+ * si l'IP ou le user-agent diffère, il s'agit probablement d'un nouvel
+ * appareil.
+ */
+async function detectNewDevice(userId: string, meta: RequestMeta): Promise<boolean> {
+  const lastLogin = await prisma.auditLog.findFirst({
+    where: { userId, action: { in: ["LOGIN_SUCCESS", "MFA_LOGIN_SUCCESS"] } },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (!lastLogin) return false;
+
+  return lastLogin.ipAddress !== meta.ipAddress || lastLogin.userAgent !== meta.userAgent;
+}
+
 export async function register(input: RegisterInput, meta: RequestMeta): Promise<AuthResult> {
   const email = input.email.toLowerCase().trim();
 
@@ -79,7 +106,7 @@ export async function register(input: RegisterInput, meta: RequestMeta): Promise
   return issueTokens(user, meta);
 }
 
-export async function login(input: LoginInput, meta: RequestMeta): Promise<AuthResult> {
+export async function login(input: LoginInput, meta: RequestMeta): Promise<LoginResult> {
   const email = input.email.toLowerCase().trim();
   const user = await prisma.user.findUnique({ where: { email } });
 
@@ -116,9 +143,154 @@ export async function login(input: LoginInput, meta: RequestMeta): Promise<AuthR
     });
   }
 
+  if (user.mfaEnabled) {
+    await audit(user.id, "LOGIN_MFA_REQUIRED", meta);
+    return { mfaRequired: true, mfaToken: signMfaChallengeToken({ sub: user.id }) };
+  }
+
+  const isNewDevice = await detectNewDevice(user.id, meta);
   await audit(user.id, "LOGIN_SUCCESS", meta);
+  if (isNewDevice) {
+    await audit(user.id, "NEW_DEVICE_LOGIN", meta);
+  }
 
   return issueTokens(user, meta);
+}
+
+/**
+ * Termine une connexion après une vérification de mot de passe réussie pour
+ * un compte ayant la 2FA activée : vérifie un code TOTP ou un code de
+ * récupération à usage unique.
+ */
+export async function completeMfaLogin(mfaToken: string, code: string, meta: RequestMeta): Promise<AuthResult> {
+  let userId: string;
+  try {
+    userId = verifyMfaChallengeToken(mfaToken).sub;
+  } catch {
+    throw new AppError(401, "Session de connexion expirée. Veuillez vous reconnecter.");
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user || !user.mfaEnabled || !user.mfaSecret) {
+    throw new AppError(401, "Session de connexion expirée. Veuillez vous reconnecter.");
+  }
+
+  let usedRecoveryCode = false;
+
+  if (/^\d{6}$/.test(code)) {
+    if (!verifyTotp(user.mfaSecret, code)) {
+      await audit(user.id, "MFA_LOGIN_FAILED", meta);
+      throw new AppError(401, "Code invalide");
+    }
+  } else {
+    const codeHash = hashRecoveryCode(code);
+    const recoveryCode = await prisma.mfaRecoveryCode.findUnique({ where: { codeHash } });
+
+    if (!recoveryCode || recoveryCode.userId !== user.id || recoveryCode.usedAt) {
+      await audit(user.id, "MFA_LOGIN_FAILED", meta);
+      throw new AppError(401, "Code invalide");
+    }
+
+    await prisma.mfaRecoveryCode.update({
+      where: { id: recoveryCode.id },
+      data: { usedAt: new Date() },
+    });
+
+    usedRecoveryCode = true;
+  }
+
+  const isNewDevice = await detectNewDevice(user.id, meta);
+  if (usedRecoveryCode) {
+    await audit(user.id, "RECOVERY_CODE_USED", meta);
+  }
+  await audit(user.id, "MFA_LOGIN_SUCCESS", meta);
+  if (isNewDevice) {
+    await audit(user.id, "NEW_DEVICE_LOGIN", meta);
+  }
+
+  return issueTokens(user, meta);
+}
+
+/** Initialise la 2FA pour un utilisateur : génère un secret TOTP non encore activé. */
+export async function setupMfa(userId: string): Promise<{ secret: string; otpauthUri: string }> {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    throw new AppError(404, "Utilisateur introuvable");
+  }
+
+  if (user.mfaEnabled) {
+    throw new AppError(409, "La 2FA est déjà activée");
+  }
+
+  const secret = generateTotpSecret();
+  await prisma.user.update({ where: { id: userId }, data: { mfaSecret: secret } });
+
+  return { secret, otpauthUri: getTotpUri(secret, user.email) };
+}
+
+/** Confirme l'activation de la 2FA via un code TOTP et génère les codes de récupération. */
+export async function confirmMfa(userId: string, code: string, meta: RequestMeta): Promise<string[]> {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user || !user.mfaSecret) {
+    throw new AppError(400, "Configuration MFA non initiée");
+  }
+
+  if (user.mfaEnabled) {
+    throw new AppError(409, "La 2FA est déjà activée");
+  }
+
+  if (!verifyTotp(user.mfaSecret, code)) {
+    throw new AppError(401, "Code invalide");
+  }
+
+  const recoveryCodes = generateRecoveryCodes();
+
+  await prisma.$transaction([
+    prisma.mfaRecoveryCode.deleteMany({ where: { userId } }),
+    prisma.mfaRecoveryCode.createMany({
+      data: recoveryCodes.map((recoveryCode) => ({ userId, codeHash: hashRecoveryCode(recoveryCode) })),
+    }),
+    prisma.user.update({ where: { id: userId }, data: { mfaEnabled: true } }),
+  ]);
+
+  await audit(userId, "MFA_ENABLED", meta);
+
+  return recoveryCodes;
+}
+
+/** Désactive la 2FA après revérification du mot de passe et d'un code TOTP/récupération. */
+export async function disableMfa(userId: string, password: string, code: string, meta: RequestMeta): Promise<void> {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user || !user.mfaEnabled || !user.mfaSecret) {
+    throw new AppError(409, "La 2FA n'est pas activée");
+  }
+
+  const validPassword = await verifyPassword(user.passwordHash, password);
+  if (!validPassword) {
+    await audit(userId, "MFA_DISABLE_FAILED", meta, { reason: "bad_password" });
+    throw new AppError(401, "Mot de passe ou code invalide");
+  }
+
+  let codeValid = false;
+  if (/^\d{6}$/.test(code)) {
+    codeValid = verifyTotp(user.mfaSecret, code);
+  } else {
+    const codeHash = hashRecoveryCode(code);
+    const recoveryCode = await prisma.mfaRecoveryCode.findUnique({ where: { codeHash } });
+    codeValid = !!recoveryCode && recoveryCode.userId === userId && !recoveryCode.usedAt;
+  }
+
+  if (!codeValid) {
+    await audit(userId, "MFA_DISABLE_FAILED", meta, { reason: "bad_code" });
+    throw new AppError(401, "Mot de passe ou code invalide");
+  }
+
+  await prisma.$transaction([
+    prisma.mfaRecoveryCode.deleteMany({ where: { userId } }),
+    prisma.user.update({ where: { id: userId }, data: { mfaEnabled: false, mfaSecret: null } }),
+  ]);
+
+  await audit(userId, "MFA_DISABLED", meta);
 }
 
 async function issueTokens(user: UserSummary, meta: RequestMeta): Promise<AuthResult> {

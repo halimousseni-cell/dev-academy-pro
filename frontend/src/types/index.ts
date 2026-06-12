@@ -6,6 +6,29 @@ export interface User {
   firstName: string;
   lastName: string;
   role: Role;
+  mfaEnabled?: boolean;
+}
+
+export interface SecuritySession {
+  id: string;
+  userAgent: string | null;
+  ipAddress: string | null;
+  createdAt: string;
+  current: boolean;
+}
+
+export interface SecurityActivityEntry {
+  id: string;
+  action: string;
+  ipAddress: string | null;
+  userAgent: string | null;
+  createdAt: string;
+}
+
+export interface SecurityOverview {
+  mfaEnabled: boolean;
+  sessions: SecuritySession[];
+  recentActivity: SecurityActivityEntry[];
 }
 
 export interface ModuleSummary {

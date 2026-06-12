@@ -85,7 +85,7 @@ export const BUG_HUNT_CHALLENGES: BugHuntChallenge[] = [
     language: "JavaScript",
     lines: [
       "const API_URL = 'https://api.exemple.com';",
-      stripe_key: process.env.VITE_STRIPE_KEY||'',
+      "const STRIPE_SECRET_KEY = process.env.VITE_STRIPE_KEY || '';",
       "export function configurerPaiement() {",
       "  return { url: API_URL, key: STRIPE_SECRET_KEY };",
       "}",

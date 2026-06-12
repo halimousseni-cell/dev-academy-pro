@@ -266,8 +266,30 @@
   vulnérabilités (Trivy), build images, DAST (OWASP ZAP) sur environnement
   de staging.
 - ⬜ Nginx reverse proxy dédié + HTTPS (Let's Encrypt), HSTS, `COOKIE_SECURE=true`.
-- ⬜ MFA (TOTP), dashboard de sécurité, détection d'anomalies, sauvegardes
-  chiffrées automatisées.
+- ✅ MFA (TOTP, RFC 6238) + dashboard de sécurité + détection d'anomalies :
+  - `backend/src/utils/totp.ts` (base32, génération de secret, URI
+    `otpauth://`, vérification HMAC-SHA1 avec tolérance ±1 pas de 30s) et
+    `backend/src/utils/recoveryCodes.ts` (8 codes de récupération à usage
+    unique au format `XXXX-XXXX`, hachés comme les refresh tokens).
+  - Modèle `MfaRecoveryCode` (Prisma) et nouvelle migration
+    `add_mfa_recovery_codes`.
+  - Flux de connexion : `POST /api/auth/login` renvoie `{ mfaRequired, mfaToken }`
+    si la 2FA est activée ; `POST /api/auth/mfa/login` valide le code TOTP ou
+    un code de récupération et finalise la connexion.
+  - Gestion de la 2FA (utilisateur authentifié) : `POST /api/auth/mfa/setup`,
+    `POST /api/auth/mfa/verify` (active la 2FA + génère les codes de
+    récupération), `POST /api/auth/mfa/disable` (mot de passe + code requis).
+  - Dashboard sécurité `GET /api/users/security` (statut 2FA, sessions
+    actives avec détection de la session courante, 10 dernières entrées du
+    journal d'activité) et `DELETE /api/users/security/sessions/:id`
+    (révocation d'une session).
+  - Détection basique de nouvel appareil : comparaison IP/user-agent avec le
+    dernier login réussi, journalisée comme `NEW_DEVICE_LOGIN`.
+  - Frontend : page `/parametres/securite` (QR code via `qrcode.react`,
+    activation/désactivation de la 2FA, codes de récupération, sessions,
+    activité récente), étape de saisie du code 2FA dans `LoginPage`, lien
+    dans la `Navbar`.
+- ⬜ Sauvegardes chiffrées automatisées de la base PostgreSQL.
 
 ## Critères de sortie du MVP (Phase 1)
 - Inscription/connexion/déconnexion/rafraîchissement de session fonctionnels

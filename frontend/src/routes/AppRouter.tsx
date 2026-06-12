@@ -31,6 +31,7 @@ import { QuizBattlePage } from "../pages/games/QuizBattlePage";
 import { AiIndexPage } from "../pages/ai/AiIndexPage";
 import { AiAssistantPage } from "../pages/ai/AiAssistantPage";
 import { ProjectGeneratorPage } from "../pages/ai/ProjectGeneratorPage";
+import { SecuritySettingsPage } from "../pages/account/SecuritySettingsPage";
 import { NotFoundPage } from "../pages/NotFoundPage";
 
 export function AppRouter() {
@@ -256,6 +257,14 @@ export function AppRouter() {
           element={
             <ProtectedRoute>
               <ProjectGeneratorPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/parametres/securite"
+          element={
+            <ProtectedRoute>
+              <SecuritySettingsPage />
             </ProtectedRoute>
           }
         />

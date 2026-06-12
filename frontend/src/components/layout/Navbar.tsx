@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { GraduationCap, LayoutDashboard, LogOut, BookOpen, FlaskConical, ShieldHalf, Sparkles, Award, Rocket } from "lucide-react";
+import { GraduationCap, LayoutDashboard, LogOut, BookOpen, FlaskConical, ShieldHalf, Sparkles, Award, Rocket, Settings } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
 export function Navbar() {
@@ -50,6 +50,9 @@ export function Navbar() {
               Projet
             </Link>
             <span className="text-slate-300">|</span>
+            <Link to="/parametres/securite" className="flex items-center gap-1.5 hover:text-brand-600" title="Sécurité du compte">
+              <Settings className="h-4 w-4" />
+            </Link>
             <span className="text-slate-500">
               {user.firstName} {user.lastName}
             </span>

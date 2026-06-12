@@ -32,3 +32,23 @@ export function getRefreshTokenExpiry(): Date {
   const days = env.REFRESH_TOKEN_TTL_DAYS;
   return new Date(Date.now() + days * 24 * 60 * 60 * 1000);
 }
+
+export interface MfaChallengeTokenPayload {
+  sub: string;
+  purpose: "mfa";
+}
+
+/** Jeton de courte durée prouvant qu'un utilisateur a déjà fourni un mot de passe valide. */
+export function signMfaChallengeToken(payload: { sub: string }): string {
+  return jwt.sign({ sub: payload.sub, purpose: "mfa" }, env.JWT_ACCESS_SECRET, {
+    expiresIn: "5m",
+  });
+}
+
+export function verifyMfaChallengeToken(token: string): MfaChallengeTokenPayload {
+  const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET) as MfaChallengeTokenPayload;
+  if (decoded.purpose !== "mfa") {
+    throw new Error("Invalid token purpose");
+  }
+  return decoded;
+}

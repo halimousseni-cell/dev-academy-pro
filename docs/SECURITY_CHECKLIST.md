@@ -7,7 +7,7 @@ bloquant pour le MVP) · — non applicable au MVP.
 - ✅ Séparation stricte frontend/backend/DB (processus distincts)
 - ✅ Architecture en couches (routes → controllers → services → repositories)
 - ✅ Principe du moindre privilège (rôles STUDENT/INSTRUCTOR/ADMIN, middleware par route)
-- 🕒 Isolation des services via Docker + réseau privé (roadmap déploiement)
+- ✅ Isolation des services via Docker + réseau privé (`docker-compose.yml`)
 
 ## Authentification
 - ✅ JWT access token (courte durée, 15 min)
@@ -16,7 +16,9 @@ bloquant pour le MVP) · — non applicable au MVP.
 - ✅ Politique de mot de passe robuste (longueur min, complexité, validation Zod)
 - ✅ Limitation des tentatives de connexion + verrouillage progressif
 - ✅ Déconnexion globale (`logout-all`)
-- 🕒 MFA (TOTP) — champs `mfaEnabled`/`mfaSecret` préparés en base
+- ✅ MFA (TOTP, RFC 6238) avec codes de récupération à usage unique, dashboard
+  de sécurité (sessions actives + révocation, journal d'activité, détection
+  basique de nouvel appareil)
 - 🕒 Vérification contre listes de mots de passe compromis (API HaveIBeenPwned)
 - 🕒 Historique des mots de passe (empêcher réutilisation)
 
