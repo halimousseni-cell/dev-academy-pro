@@ -246,7 +246,7 @@
     navigateur (`localStorage`) et affichée sous forme de barre de
     progression globale et par étape.
 
-## Phase 7 — Déploiement & sécurité production (en cours)
+## Phase 7 — Déploiement & sécurité production ✅
 - ✅ Dockerisation : `backend/Dockerfile` et `frontend/Dockerfile` multi-stage
   (build puis image minimale `node:20-alpine` / `nginx:alpine`, utilisateur
   non-root pour le backend, `HEALTHCHECK`). `docker-compose.yml` à la racine
