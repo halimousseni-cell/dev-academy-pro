@@ -44,7 +44,8 @@ bloquant pour le MVP) · — non applicable au MVP.
 - ✅ Contrôle des permissions par rôle (middleware `requireRole`)
 
 ## Chiffrement
-- 🕒 HTTPS obligatoire (TLS) — à activer via Nginx au déploiement
+- ✅ HTTPS obligatoire (TLS) — reverse proxy Nginx + Let's Encrypt
+  (`docker-compose.prod.yml`, `init-letsencrypt.sh`), HSTS, `COOKIE_SECURE=true`
 - ✅ Hash des mots de passe et tokens (jamais en clair)
 - 🕒 Chiffrement des sauvegardes (roadmap)
 - 🕒 Rotation automatique des clés (roadmap)

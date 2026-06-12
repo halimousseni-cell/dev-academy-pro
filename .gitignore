@@ -1,1 +1,5 @@
 .env
+
+# Certificats Let's Encrypt générés par init-letsencrypt.sh / certbot
+certbot/conf/
+certbot/www/

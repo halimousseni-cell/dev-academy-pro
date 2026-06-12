@@ -35,6 +35,29 @@ automatiquement au démarrage du conteneur backend. Pour arrêter la pile :
 `docker compose down` (ajouter `-v` pour supprimer aussi les données
 PostgreSQL).
 
+## Déploiement en production (HTTPS)
+
+La surcouche `docker-compose.prod.yml` ajoute un reverse proxy Nginx qui
+termine le TLS (certificat Let's Encrypt via Certbot, renouvellement
+automatique) devant le frontend, qui n'est alors plus exposé directement.
+
+```bash
+# 1. Configurer .env : secrets habituels + DOMAIN, LETSENCRYPT_EMAIL,
+#    FRONTEND_ORIGIN=https://<DOMAIN>, COOKIE_SECURE=true
+cp .env.example .env
+
+# 2. Pointer le DNS (A/AAAA) de <DOMAIN> vers ce serveur, puis obtenir le
+#    premier certificat (à exécuter une seule fois)
+./init-letsencrypt.sh
+
+# 3. Démarrer la pile complète
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
+Le certificat est renouvelé automatiquement par le service `certbot` ; le
+reverse proxy `nginx` recharge sa configuration toutes les 6 heures pour en
+tenir compte.
+
 ## Démarrage rapide (développement local sans Docker)
 
 Nécessite une instance PostgreSQL locale (ex. `docker compose up -d db`,

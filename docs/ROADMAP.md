@@ -267,7 +267,26 @@
   build des images Docker backend/frontend et scan de vulnérabilités Trivy
   sur ces images (sévérités CRITICAL/HIGH). DAST (OWASP ZAP) sur
   environnement de staging reste hors périmètre (pas d'infra de staging).
-- ⬜ Nginx reverse proxy dédié + HTTPS (Let's Encrypt), HSTS, `COOKIE_SECURE=true`.
+- ✅ Nginx reverse proxy dédié + HTTPS (Let's Encrypt), HSTS,
+  `COOKIE_SECURE=true` :
+  - `docker-compose.prod.yml` (surcouche de `docker-compose.yml`) ajoute un
+    service `nginx` (build `./nginx`, template
+    `nginx/templates/app.conf.template` rendu via envsubst sur `${DOMAIN}`)
+    qui termine le TLS, redirige HTTP→HTTPS, ajoute l'en-tête
+    `Strict-Transport-Security` et proxifie vers le conteneur `frontend`
+    (désormais non exposé sur l'hôte). Un service `certbot` renouvelle
+    automatiquement le certificat ; `nginx` recharge sa configuration toutes
+    les 6 heures.
+  - `init-letsencrypt.sh` : script d'amorçage (certificat temporaire →
+    démarrage de Nginx → challenge HTTP-01 Let's Encrypt → certificat
+    définitif), à exécuter une seule fois par domaine.
+  - `frontend/nginx.conf` : transmet désormais `X-Forwarded-Proto` reçu du
+    reverse proxy amont (via une `map` avec repli sur `$scheme`), pour que
+    le backend (derrière `trust proxy`) détecte correctement HTTPS et pose
+    le cookie de refresh token en `Secure`.
+  - `.env.example` : nouvelles variables `DOMAIN` et `LETSENCRYPT_EMAIL`,
+    rappel de passer `FRONTEND_ORIGIN=https://<DOMAIN>` et
+    `COOKIE_SECURE=true` en production.
 - ✅ MFA (TOTP, RFC 6238) + dashboard de sécurité + détection d'anomalies :
   - `backend/src/utils/totp.ts` (base32, génération de secret, URI
     `otpauth://`, vérification HMAC-SHA1 avec tolérance ±1 pas de 30s) et
